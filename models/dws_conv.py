@@ -20,7 +20,6 @@
 # @Description :
 
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,7 +35,7 @@ class DepthwiseSeparableConv(nn.mode):
             padding_size = (kernel_size + 1) // 2
         operations = [
             nn.Conv2d(in_channels=in_channels,
-                      out_channels=out_channels,
+                      out_channels=in_channels,
                       kernel_size=kernel_size, stride=stride,
                       padding=padding_size, groups=in_channels),
 
@@ -44,7 +43,6 @@ class DepthwiseSeparableConv(nn.mode):
                       out_channels=out_channels,
                       kernel_size=1, stride=1)
         ]
-
         self.dwsconv = nn.Sequential(*operations)
 
     def forward(self, x):

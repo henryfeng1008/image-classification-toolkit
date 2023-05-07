@@ -25,9 +25,9 @@ import numpy as np
 import torch
 
 
-
-
 def main():
+    config_path = "./config.yaml"
+    config = utils.load_config(config_path)
     pass
 
 

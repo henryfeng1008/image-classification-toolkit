@@ -12,21 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# @File    :   misc_utils.py
-# @Time    :   2023/05/14 14:01:36
+# @File    :   FCOS_net.py
+# @Time    :   2023/05/14 14:01:19
 # @Author  :   Hanyu Feng
 # @Version :   1.0
 # @Contact :   feng.hanyu@wustl.edu
 # @Description :
 
+from collections import OrderedDict
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from Resnet import *
+from modules import *
 
-import os
-import yaml
 
+class FCOS(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.backbone = Resnet_18()
+        print(self.backbone)
+        # self.xFPN = FPN()
 
-def load_config(config_path, check=False):
-    f = open(config_path)
-    config = yaml.load(f, Loader=yaml.FullLoader)
-    if check:
-        print(config)
-    return config
+    def forward(self, x):
+        # features = self.backbone(x)
+        # detect_result = self.
+        return self.backbone(x)
+
+if __name__ == "__main__":
+    myModel = FCOS()
+    fake_input = torch.ones((4, 3, 224, 224))
+    output = myModel(fake_input)

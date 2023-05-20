@@ -23,16 +23,15 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from Resnet import *
+from resnet import *
 from modules import *
 
 
 class FCOS(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.backbone = Resnet_18()
-        print(self.backbone)
-        # self.xFPN = FPN()
+        self.backbone = build_resnet18(pretrain=True, verify=True)
+        # self.FPN = FPN()
 
     def forward(self, x):
         # features = self.backbone(x)
@@ -42,4 +41,5 @@ class FCOS(nn.Module):
 if __name__ == "__main__":
     myModel = FCOS()
     fake_input = torch.ones((4, 3, 224, 224))
+    fake_input = fake_input.to("cuda")
     output = myModel(fake_input)

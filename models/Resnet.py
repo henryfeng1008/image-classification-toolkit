@@ -20,66 +20,193 @@
 # @Description :
 
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from modules import *
 from collections import OrderedDict
+from torchvision import models
 
+__all__ = ["build_resnet18"]
 
-class Resnet_18(nn.Module):
-    def __init__(self) -> None:
+class ResBlock(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 stride=1,
+                 downsample=None,
+                 norm_layer=None) -> None:
         super().__init__()
-        self.stage_num = 4
-        self.repeat_num_per_stage = [2, 2, 2, 2]
-        self.out_channels = [64, 128, 256, 512]
-        self.stride_per_stage = [1, 2, 2, 2]
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
 
-        assert self.stage_num == len(self.out_channels)
-        self.main_branch = []
-        self.main_branch_key = []
+        self.conv1 = nn.Conv2d(in_channels, out_channels,
+                               kernel_size=3, stride=stride,
+                               padding=1, bias=False)
+        self.bn1 = norm_layer(out_channels)
+        self.relu = nn.ReLU(inplace=True)
 
-        stage_in_channel = self.out_channels[0]
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=stage_in_channel,
-                               kernel_size=7, stride=2, padding=(3, 3))
-        self.max_pool_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=(1, 1))
+        self.conv2 = nn.Conv2d(out_channels, out_channels,
+                               kernel_size=3,stride=1,
+                               padding=1, bias=False)
+        self.bn2 = norm_layer(out_channels)
 
-        for stage_idx in range(self.stage_num):
-            stage_out_channel = self.out_channels[stage_idx]
-            cur_stage_repeat_num = self.repeat_num_per_stage[stage_idx]
-            for repeat_num in range(cur_stage_repeat_num):
-                if repeat_num != cur_stage_repeat_num - 1:
-                    key_name = \
-                    "stage_" + str(stage_idx + 1) + "_" + str(repeat_num + 1)
-                else:
-                    key_name = \
-                    "C" + str(stage_idx + 1)
-                if repeat_num == 0:
-                    conv_ops = ResBlock_18(in_channels=stage_in_channel,
-                                           out_channels=stage_out_channel,
-                                           kernel_size=3,
-                                           stride=self.stride_per_stage[stage_idx])
-                else:
-                    conv_ops = ResBlock_18(in_channels=stage_out_channel,
-                                           out_channels=stage_out_channel,
-                                           kernel_size=3, stride=1)
+        self.downsample = downsample
+        self.stride = stride
 
-                self.main_branch.append(conv_ops)
-                self.main_branch_key.append(key_name)
+    def forward(self, x):
+        identity = x
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
 
-            stage_in_channel = stage_out_channel
-        self.main_branch_ops = zip(self.main_branch_key, self.main_branch)
-        # for ops in self.main_branch:
-        #     print(ops)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        out += identity
+        out = self.relu(out)
+        return out
+
+
+class Resnet18(nn.Module):
+    def __init__(self, normal_layer=None) -> None:
+        super().__init__()
+        self.layers = [2, 2, 2, 2]
+        self.in_channels = 64
+        self.num_class = 1000
+
+        if normal_layer is None:
+            norm_layer = nn.BatchNorm2d
+        self._normal_layer = norm_layer
+
+        self.conv1 = nn.Conv2d(in_channels=3,
+                               out_channels=self.in_channels,
+                               kernel_size=7,
+                               stride=2,
+                               padding=3,
+                               bias=False)
+        self.bn1 = norm_layer(self.in_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.layer1 = self._make_layer(ResBlock, 64, self.layers[0])
+        self.layer2 = self._make_layer(ResBlock, 128, self.layers[1], stride=2)
+        self.layer3 = self._make_layer(ResBlock, 256, self.layers[2], stride=2)
+        self.layer4 = self._make_layer(ResBlock, 512, self.layers[3], stride=2)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512, self.num_class)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def _make_layer(self, block, out_channels, repeat_num, stride=1):
+        norm_layer = self._normal_layer
+        downsample = None
+
+        if stride != 1 or self.in_channels != out_channels:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.in_channels, out_channels,
+                          kernel_size=1, stride=stride,
+                          bias=False),
+                norm_layer(out_channels),
+            )
+
+        layers = []
+        layers.append(block(self.in_channels, out_channels,
+                           stride, downsample, norm_layer))
+        self.in_channels = out_channels
+        for _ in range(1, repeat_num):
+            layers.append(block(self.in_channels, out_channels,
+                               norm_layer=norm_layer))
+        return nn.Sequential(*layers)
+
 
     def forward(self, x):
         output = OrderedDict()
         x = self.conv1(x)
-        x = self.max_pool_1(x)
-        output['C0'] = x
-        for (key, ops) in self.main_branch_ops:
-            x = ops(x)
-            output[key] = x
-        for key in output.keys():
-            print(output[key].shape, key)
-        return output
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        output["C1"] = x
+        x = self.layer1(x)
+        output["C2"] = x
+        x = self.layer2(x)
+        output["C3"] = x
+        x = self.layer3(x)
+        output["C4"] = x
+        x = self.layer4(x)
+        output["C5"] = x
+
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        return x, output
+
+def build_resnet18(pretrain=False, verify=False):
+    pretrain_weight = r'../../Pretrain_model/resnet18-f37072fd.pth'
+    model = Resnet18()
+    if pretrain:
+        state_dict = torch.load(pretrain_weight)
+        model.load_state_dict(state_dict, strict=True)
+    model.to("cuda")
+
+    if verify:
+        ref_resnet_18 = models.resnet18(pretrained=True)
+        ref_resnet_18.to("cuda")
+        input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)
+        input_tensor = input_tensor.to("cuda")
+
+        my_output, _ = model(input_tensor)
+        ref_output = ref_resnet_18(input_tensor)
+        if not my_output.equal(ref_output):
+            raise ValueError("resnet 18 not parity with public version !!!")
+        else:
+            print("resnet 18 parity")
+    return model
+
+
+
+if __name__ == "__main__":
+    pretrain_weight = r'../../Pretrain_model/resnet18-f37072fd.pth'
+    device = torch.device("cuda")
+    # model = torch.load(pretrain_weight)
+    # print(model.keys())
+    my_resnet_18 = Resnet18()
+    my_resnet_18.load_state_dict(torch.load(pretrain_weight), strict=True)
+    my_resnet_18.to(device)
+    my_state_dict = my_resnet_18.state_dict()
+
+    ref_resnet_18 = models.resnet18()
+    ref_resnet_18.load_state_dict(torch.load(pretrain_weight), strict=True)
+    ref_resnet_18.to(device)
+    ref_state_dict = ref_resnet_18.state_dict()
+
+    # print(f"my_state_dict {my_state_dict.keys()}")
+    # print(f"ref_state_dict {ref_state_dict.keys()}")
+
+    # for key in ref_state_dict.keys():
+    #     ref_param = ref_state_dict[key]
+    #     my_param = my_state_dict[key]
+    #     print(key,"\t", my_param.equal(ref_param))
+
+    input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)
+    input_tensor = input_tensor.to(device)
+
+    my_output, output_dict = my_resnet_18(input_tensor)
+    ref_output = ref_resnet_18(input_tensor)
+
+
+    print(my_output)
+    print(ref_output)
+    print(my_output.equal(ref_output))
+
+    # print(my_resnet_18)
+    # print(ref_resnet_18)
+
+    # print(my_output)
+    # print(ref_output)

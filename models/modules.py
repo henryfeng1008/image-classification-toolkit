@@ -47,30 +47,7 @@ class ConvBNReLU(nn.Module):
         return self.relu(x)
 
 
-class ResBlock_18(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=True) -> None:
-        super().__init__()
-        self.stride = stride
-        self.conv1 = ConvBNReLU(in_channels=in_channels,
-                                out_channels=out_channels,
-                                kernel_size=kernel_size,
-                                stride=stride)
-        self.conv2 = ConvBNReLU(in_channels=out_channels,
-                                out_channels=out_channels,
-                                kernel_size=kernel_size)
-        self.skip_connect = ConvBNReLU(in_channels=in_channels,
-                                out_channels=out_channels,
-                                kernel_size=1,
-                                stride=stride)
 
-    def forward(self, x):
-        input_x = x
-        x = self.conv1(x)
-        x = self.conv2(x)
-        if self.stride != 1:
-            return x + self.skip_connect(input_x)
-        else:
-            return x + input_x
 
 class DepthwiseSeparableConv(nn.Module):
     def __init__(self, in_channels, out_channels,

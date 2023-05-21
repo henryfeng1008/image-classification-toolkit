@@ -69,13 +69,13 @@ class ResBlock(nn.Module):
 
 
 class Resnet18(nn.Module):
-    def __init__(self, normal_layer=None) -> None:
+    def __init__(self, norm_layer=None) -> None:
         super().__init__()
         self.layers = [2, 2, 2, 2]
         self.in_channels = 64
         self.num_class = 1000
 
-        if normal_layer is None:
+        if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._normal_layer = norm_layer
 
@@ -145,7 +145,7 @@ class Resnet18(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        return x, output
+        return output
 
 def build_resnet18(pretrain=False, verify=False):
     pretrain_weight = r'../../Pretrain_model/resnet18-f37072fd.pth'
@@ -155,7 +155,7 @@ def build_resnet18(pretrain=False, verify=False):
         model.load_state_dict(state_dict, strict=True)
     model.to("cuda")
 
-    if verify:
+    if pretrain and verify:
         ref_resnet_18 = models.resnet18(pretrained=True)
         ref_resnet_18.to("cuda")
         input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)

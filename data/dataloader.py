@@ -25,25 +25,46 @@ import os
 import cv2
 import numpy as np
 import json
-import torch.utils.data as data
+from torch.utils.data import Dataset, DataLoader
 
 
-class myDataSet(data.Dataset):
+class myDataSet(Dataset):
     def __init__(self, anno_file) -> None:
         super().__init__()
-        pass
+        with open(anno_file, 'r') as f:
+            data_dict = json.load(f)
+        self.data_dict = data_dict
+
+    def __getitem__(self, index):
+        data_item = self.data_dict[index]
+
+        src_image = cv2.imread(data_item['file_name'])
+        data_item["input_data"] = src_image
+        return data_item
+
+    def __len__(self):
+        return len(self.data_dict)
 
 
 
 def build_train_loader(anno_file):
     det_dataset = myDataSet(anno_file=anno_file)
-    dataloader = data.DataLoader(dataset=det_dataset,
-                                 batch_size=16,
-                                 shuffle=True,
-                                 num_workers=10,
-                                 drop_last=True)
+    dataloader = DataLoader(dataset=det_dataset,
+                            batch_size=16,
+                            shuffle=True,
+                            num_workers=10,
+                            drop_last=True)
     return dataloader
 
 
-
 if __name__ == "__main__":
+    anno_file = r'./data/anno/train_det_face_anno.json'
+    my_loader = build_train_loader(anno_file)
+    print(len(my_loader))
+    for item in my_loader:
+        print(item)
+        break
+    # for idx in range(len(my_loader)):
+    #     item = next(my_loader)
+    #     print(item.keys())
+    #     break

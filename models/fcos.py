@@ -23,12 +23,18 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from resnet import *
-from fpn import *
-from modules import *
+
+if __name__ == "__main__":
+    from base_ops.modules import ConvBNReLU
+    from resnet import build_resnet18
+    from fpn import build_fpn
+else:
+    from .base_ops.modules import ConvBNReLU
+    from .resnet import build_resnet18
+    from .fpn import build_fpn
 
 
-__all__ = ["build_fcos"]
+# __all__ = ["build_fcos"]
 
 
 class FCOS_head(nn.Module):
@@ -108,6 +114,7 @@ class FCOS(nn.Module):
 def build_fcos():
     model = FCOS()
     return model
+
 
 if __name__ == "__main__":
     myModel = FCOS()

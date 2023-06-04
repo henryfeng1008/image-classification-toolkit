@@ -21,6 +21,7 @@
 
 
 import os
+import torch
 import yaml
 
 
@@ -30,3 +31,11 @@ def load_config(config_path, check=False):
     if check:
         print(config)
     return config
+
+def image_normalization(img):
+    PIXEL_MEAN = [103.939, 116.779, 123.68]
+    PIXEL_STD = [57.375, 57.12, 58.393]
+    pixel_mean = torch.tensor(PIXEL_MEAN).view(-1, 1, 1).to(img.device)
+    pixel_std = torch.tensor(PIXEL_STD).view(-1, 1, 1).to(img.device)
+    img = (img - pixel_mean) / pixel_std
+    return img

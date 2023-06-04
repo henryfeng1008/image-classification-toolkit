@@ -43,10 +43,8 @@ def get_data(anno_dir, data_root):
         if '.jpg'in lines[line_idx]:
             item = dict()
             file_name = lines[line_idx].strip()
-            # print(file_name, type(file_name))
             file_name = os.path.join(data_root, file_name)
             item["file_name"] = file_name
-            # print(file_name)
             width, height = imagesize.get(file_name)
             item["img_width"] = width
             item["img_height"] = height
@@ -63,15 +61,20 @@ def get_data(anno_dir, data_root):
                 instance = dict()
                 line_idx += 1
                 box = lines[line_idx].strip()
-                box = box.split(" ")[:4]
+                box = box.split(" ")
+                blur, expression, illumination, \
+                invalid, occlusion, pose = box[4:]
+                if int(occlusion) >= 1 or int(blur) >= 2:
+                    continue
+                bbox = box[:4]
                 # for item_idx in range(len(box)):
                 for item_idx in range(4):
-                    box[item_idx] = int(box[item_idx])
+                    bbox[item_idx] = int(bbox[item_idx])
                     if item_idx == 0 or item_idx == 2:
-                        box[item_idx] = box[item_idx] / item["img_width"]
+                        bbox[item_idx] = bbox[item_idx] / item["img_width"]
                     else:
-                        box[item_idx] = box[item_idx] / item["img_height"]
-                instance['bbox'] = box
+                        bbox[item_idx] = bbox[item_idx] / item["img_height"]
+                instance['bbox'] = bbox
                 instance['class'] = 1
                 gt_instance.append(instance)
             item["gt_instance"] = gt_instance
@@ -84,7 +87,11 @@ def get_data(anno_dir, data_root):
     return anno
 
 
-def plot_image(img_path, bbox):
+def plot_image(cur_anno):
+    img_path = cur_anno['file_name']
+    img_width = cur_anno['img_width']
+    img_height = cur_anno['img_height']
+    gt_instance = cur_anno['gt_instance']
     print(img_path)
     if os.path.exists(img_path):
         print("Path valid")
@@ -92,11 +99,16 @@ def plot_image(img_path, bbox):
         print("Path invalid, please check again")
         return None
     img = cv2.imread(img_path)
-    if len(bbox) != 0:
-        for box in bbox:
-            x1, y1, w, h, blur, expression, illumination, invalid, occlusion, pose = box
-            if blur > 2 or occlusion > 10 or invalid != 0:
-                continue
+    if len(gt_instance) != 0:
+        for instance in gt_instance:
+            box, class_id = instance['bbox'], instance['class']
+            x1, y1, w, h = box
+            x1 = int(x1 * img_width)
+            y1 = int(y1 * img_height)
+            w = int(w * img_width)
+            h = int(h * img_height)
+            # if blur > 2 or occlusion > 10 or invalid != 0:
+            #     continue
             x2, y2 = x1 + w, y1 + h
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
     cv2.imshow("Sample", img)
@@ -117,11 +129,10 @@ def main():
         json.dump(anno, f)
         f.close()
 
+    # anno = json.load(open(my_anno_file, 'r'))
     # for idx in range(10):
-    #     check = anno[idx]
-    #     file_name = os.path.join(data_root, check['file_name'])
-    #     bbox = check['bbox']
-    #     plot_image(file_name, bbox)
+    #     cur_anno = anno[idx]
+    #     plot_image(cur_anno)
 
 
 if __name__ == "__main__":

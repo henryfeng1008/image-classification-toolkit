@@ -19,14 +19,13 @@
 # @Contact :   feng.hanyu@wustl.edu
 # @Description :
 
-
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from modules import *
 from collections import OrderedDict
 from torchvision import models
 
-__all__ = ["build_resnet18"]
+# __all__ = ["build_resnet18"]
 
 class ResBlock(nn.Module):
     def __init__(self,
@@ -197,13 +196,13 @@ if __name__ == "__main__":
     input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)
     input_tensor = input_tensor.to(device)
 
-    my_output, output_dict = my_resnet_18(input_tensor)
+    my_output = my_resnet_18(input_tensor)
     ref_output = ref_resnet_18(input_tensor)
 
 
     print(my_output)
     print(ref_output)
-    print(my_output.equal(ref_output))
+    # print(my_output.equal(ref_output))
 
     # print(my_resnet_18)
     # print(ref_resnet_18)

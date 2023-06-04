@@ -20,39 +20,53 @@
 # @Description :
 
 
+from typing import Any, Iterator
 import torch
 import os
 import cv2
 import numpy as np
 import json
-from torch.utils.data import Dataset, DataLoader
+import copy
+import math
+from torch.utils.data.dataset import Dataset
+from torch.utils.data.dataloader import DataLoader
 
 
 class myDataSet(Dataset):
     def __init__(self, anno_file) -> None:
         super().__init__()
         with open(anno_file, 'r') as f:
-            data_dict = json.load(f)
-        self.data_dict = data_dict
+            data_list = json.load(f)
+        self.data_list = data_list
 
     def __getitem__(self, index):
-        data_item = self.data_dict[index]
-
-        src_image = cv2.imread(data_item['file_name'])
-        data_item["input_data"] = src_image
+        data_item = copy.deepcopy(self.data_list[index])
         return data_item
 
     def __len__(self):
-        return len(self.data_dict)
+        return len(self.data_list)
+
+class MyDataMapper():
+    def __init__(self):
+        pass
+
+    def __call__(self, data_item) -> Any:
+        for item in data_item:
+            src_image = cv2.imread(item['file_name'])
+            ds_image = cv2.resize(src_image, (224, 224), cv2.INTER_AREA)
+            ds_image = torch.as_tensor(np.ascontiguousarray(ds_image.transpose(2, 0, 1)))
+            item["input_image"] = ds_image
+        return data_item
 
 
-
-def build_train_loader(anno_file):
+def build_train_loader(anno_file, batch_size=16):
     det_dataset = myDataSet(anno_file=anno_file)
+    mapper = MyDataMapper()
     dataloader = DataLoader(dataset=det_dataset,
-                            batch_size=16,
+                            batch_size=batch_size,
                             shuffle=True,
-                            num_workers=10,
+                            num_workers=0,
+                            collate_fn=mapper,
                             drop_last=True)
     return dataloader
 
@@ -61,8 +75,9 @@ if __name__ == "__main__":
     anno_file = r'./data/anno/train_det_face_anno.json'
     my_loader = build_train_loader(anno_file)
     print(len(my_loader))
-    for item in my_loader:
-        print(item)
+
+    for i, value in enumerate(my_loader):
+        print(value)
         break
     # for idx in range(len(my_loader)):
     #     item = next(my_loader)

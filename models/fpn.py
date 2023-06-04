@@ -24,7 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
 
-__all__ = ["build_fpn"]
+# __all__ = ["build_fpn"]
 
 
 class FPN(nn.Module):

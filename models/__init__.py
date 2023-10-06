@@ -19,3 +19,14 @@
 # @Contact :   feng.hanyu@wustl.edu
 # @Description :
 
+from utils.register import Register
+from cfgs.config import get_device
+
+
+register = Register()
+
+def build_model(cfg):
+    model = register.get(cfg.Model.Name)
+    return model
+
+print(get_device())

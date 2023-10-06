@@ -19,11 +19,20 @@
 # @Contact :   feng.hanyu@wustl.edu
 # @Description :
 
+import os
+import sys
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(base_path)
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
 from torchvision import models
+from cfgs import get_device
+
+# import torchvision.models as models
+# resnet18_model = models.resnet18(pretrained=True)
 
 # __all__ = ["build_resnet18"]
 
@@ -146,19 +155,20 @@ class Resnet18(nn.Module):
         x = self.fc(x)
         return output
 
-def build_resnet18(pretrain=False, verify=False):
-    pretrain_weight = r'../../Pretrain_model/resnet18-f37072fd.pth'
+def build_resnet18(pretrain=False, verify=False, device="cuda"):
+    pretrain_weight = r'../pretrained/resnet18-f37072fd.pth'
+    print(os.listdir('./'))
     model = Resnet18()
     if pretrain:
         state_dict = torch.load(pretrain_weight)
         model.load_state_dict(state_dict, strict=True)
-    model.to("cuda")
+    model.to(device)
 
     if pretrain and verify:
         ref_resnet_18 = models.resnet18(pretrained=True)
-        ref_resnet_18.to("cuda")
+        ref_resnet_18.to(device)
         input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)
-        input_tensor = input_tensor.to("cuda")
+        input_tensor = input_tensor.to(device)
 
         my_output, _ = model(input_tensor)
         ref_output = ref_resnet_18(input_tensor)
@@ -171,8 +181,10 @@ def build_resnet18(pretrain=False, verify=False):
 
 
 if __name__ == "__main__":
-    pretrain_weight = r'../../Pretrain_model/resnet18-f37072fd.pth'
-    device = torch.device("cuda")
+    pretrain_weight = r'../pretrained/resnet18-f37072fd.pth'
+    print(os.path.exists(pretrain_weight))
+    gpu = get_device()
+    device = torch.device(gpu)
     # model = torch.load(pretrain_weight)
     # print(model.keys())
     my_resnet_18 = Resnet18()

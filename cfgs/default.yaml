@@ -2,6 +2,7 @@ Version: 1.0
 
 Model:
   Version: 1.0
+  Backbone: "resnet18"
 
 Data:
   Version: 1.0

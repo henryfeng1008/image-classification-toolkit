@@ -39,7 +39,7 @@ def main():
         train_loader = build_dataloader(cfg.Data.TrainData, cfg.Solver.BatchSize)
         test_loader = build_dataloader(cfg.Data.ValidData, 1)
         
-        # model = build_model()
+        model = build_model().to(cfg.Device)
         
         # optimizer = torch.optim.SGD(model.parameters(), lr=1e-4)
         # if cfg["Solver"]["Optimizer"] == "AdamW":

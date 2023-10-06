@@ -30,7 +30,7 @@ import copy
 import math
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
-
+from .datasets import build_dataset
 
 class myDataSet(Dataset):
     def __init__(self, anno_file) -> None:
@@ -71,14 +71,35 @@ def build_train_loader(anno_file, batch_size=16):
     return dataloader
 
 
-if __name__ == "__main__":
-    anno_file = r'./data/anno/train_det_face_anno.json'
-    my_loader = build_train_loader(anno_file)
-    print(len(my_loader))
+def build_dataloader(data_list, batch_size):
+    print(f"data_list {data_list}")
+    print(f"batch_size {batch_size}")
+    dataset = build_dataset(data_list)
+    mapper_func = MyDataMapper()
+    dataloader = DataLoader(dataset=dataset,
+                            batch_size=batch_size,
+                            shuffle=True,
+                            num_workers=0,
+                            collate_fn=mapper_func,
+                            drop_last=True)
+    return dataloader
+    
 
-    for i, value in enumerate(my_loader):
-        print(value)
-        break
+if __name__ == "__main__":
+    train_data = [
+        '../../../Datasets/COCO/annotations/instances_train2017.json',
+    ]
+    dataset = build_dataset(train_data)
+    pass
+    # anno_file = r'./data/anno/train_det_face_anno.json'
+    # my_loader = build_train_loader(anno_file)
+    # print(len(my_loader))
+
+    # for i, value in enumerate(my_loader):
+    #     print(value)
+    #     break
+    
+    
     # for idx in range(len(my_loader)):
     #     item = next(my_loader)
     #     print(item.keys())

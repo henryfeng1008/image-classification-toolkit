@@ -1,0 +1,20 @@
+Version: 1.0
+
+Model:
+  Version: 1.0
+
+Data:
+  Version: 1.0
+  TrainData: [
+    '../../../Datasets/COCO/annotations/instances_train2017.json',
+  ]
+  ValidData: [
+    '../../../Datasets/COCO/annotations/instances_val2017.json'
+  ]
+
+Solver:
+  BatchSize: 32
+  Optimizer: "AdamW"
+  LearningRate: 1e-4
+  LRScheduler: ""
+  Epoch: 10000

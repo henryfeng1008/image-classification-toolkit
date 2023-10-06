@@ -21,13 +21,36 @@
 
 
 import os
-import numpy as np
+import yaml
 import torch
-
+import argparse
+import numpy as np
+from data import build_dataloader
+from cfgs import Dict2Class, build_args, get_device, load_config_copy_args
+            
 
 def main():
-    config_path = "./config.yaml"
-    config = utils.load_config(config_path)
+    args = build_args()
+    print("[*] ", args)
+    cfg = load_config_copy_args(args)
+
+    if cfg.Mode == "train":
+        print(f"cfg.Data.Version {cfg.Data.Version}")
+        train_loader = build_dataloader(cfg.Data.TrainData, cfg.Solver.BatchSize)
+        test_loader = build_dataloader(cfg.Data.ValidData, 1)
+        
+        # model = build_model()
+        
+        # optimizer = torch.optim.SGD(model.parameters(), lr=1e-4)
+        # if cfg["Solver"]["Optimizer"] == "AdamW":
+        #     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+        
+        # for ep in range(cfg["Solver"])
+        
+        pass
+    else:
+        pass
+    
     pass
 
 

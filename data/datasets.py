@@ -12,13 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# @File    :   __init__.py
-# @Time    :   2023/06/03 16:19:29
+# @File    :   datasets.py
+# @Time    :   2023/10/06 22:18:37
 # @Author  :   Hanyu Feng
 # @Version :   1.0
 # @Contact :   feng.hanyu@wustl.edu
 # @Description :
 
+from typing import Any
+import torch
+from torch.utils.data import Dataset
 
-from .datasets import build_dataset
-from .dataloader import build_train_loader, build_dataloader
+
+class DefaultDataset(Dataset):
+    def __init__(self) -> None:
+        super().__init__()
+        pass
+    
+    def __getitem__(self, index) -> Any:
+        return super().__getitem__(index)
+    
+    def __len__(self):
+        return 0
+    
+def build_dataset(data_list):
+    print(__name__, data_list)
+    return None
+    pass

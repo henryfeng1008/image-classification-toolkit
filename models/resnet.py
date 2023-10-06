@@ -24,6 +24,7 @@ import sys
 base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(base_path)
 
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -153,11 +154,10 @@ class Resnet18(nn.Module):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        return output
+        return x, output
 
 def build_resnet18(pretrain=False, verify=False, device="cuda"):
-    pretrain_weight = r'../pretrained/resnet18-f37072fd.pth'
-    print(os.listdir('./'))
+    pretrain_weight = r'./pretrained/resnet18-f37072fd.pth'
     model = Resnet18()
     if pretrain:
         state_dict = torch.load(pretrain_weight)
@@ -181,9 +181,10 @@ def build_resnet18(pretrain=False, verify=False, device="cuda"):
 
 
 if __name__ == "__main__":
-    pretrain_weight = r'../pretrained/resnet18-f37072fd.pth'
-    print(os.path.exists(pretrain_weight))
+    pretrain_weight = r'./pretrained/resnet18-f37072fd.pth'
     gpu = get_device()
+    # gpu = 'cpu'
+    model = build_resnet18(pretrain=True, verify=True, device=gpu)
     device = torch.device(gpu)
     # model = torch.load(pretrain_weight)
     # print(model.keys())
@@ -207,13 +208,19 @@ if __name__ == "__main__":
 
     input_tensor = torch.ones((1, 3, 224, 224), requires_grad=False)
     input_tensor = input_tensor.to(device)
-
+    my_start_time = time.time()
     my_output = my_resnet_18(input_tensor)
+    my_end_time = time.time()
+    print(f"my model time: {my_end_time - my_start_time}")
+    
+    ref_start_time = time.time()
     ref_output = ref_resnet_18(input_tensor)
+    ref_end_time = time.time()
+    print(f"ref model time: {ref_end_time - ref_start_time}")
 
-
-    print(my_output)
-    print(ref_output)
+    # print(my_output)
+    # print(ref_output)
+    
     # print(my_output.equal(ref_output))
 
     # print(my_resnet_18)
